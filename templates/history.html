@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Event History
+    </h2>
+    <div class="page-actions">
+        <select id="severityFilter" class="form-select" onchange="loadEvents()">
+            <option value="">All Severities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH_RISK">High Risk</option>
+            <option value="SUSPICIOUS">Suspicious</option>
+            <option value="NORMAL">Normal</option>
+        </select>
+        <select id="typeFilter" class="form-select" onchange="loadEvents()">
+            <option value="">All Types</option>
+            <option value="weapon_detection">Weapon Detection</option>
+            <option value="violence_detected">Violence</option>
+            <option value="crowd_anomaly">Crowd Anomaly</option>
+            <option value="high_threat">High Threat</option>
+            <option value="suspicious_activity">Suspicious</option>
+            <option value="routine_scan">Routine Scan</option>
+            <option value="alert">Alert</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-container">
+    <table class="data-table" id="eventsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Threat Score</th>
+                <th>Severity</th>
+                <th>People</th>
+                <th>Weapon</th>
+                <th>Violence</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody id="eventsBody">
+            <tr><td colspan="9" class="text-center">Loading...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination" id="eventsPagination">
+    <button class="btn btn-sm" onclick="prevPage()">← Previous</button>
+    <span id="pageInfo">Page 1</span>
+    <button class="btn btn-sm" onclick="nextPage()">Next →</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 0;
+const pageSize = 30;
+let totalEvents = 0;
+
+async function loadEvents() {
+    const severity = document.getElementById('severityFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const offset = currentPage * pageSize;
+    
+    let url = `/api/events?limit=${pageSize}&offset=${offset}`;
+    if (severity) url += `&severity=${severity}`;
+    if (type) url += `&event_type=${type}`;
+    
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        totalEvents = data.total;
+        renderEvents(data.events);
+        updatePagination();
+    } catch (e) {
+        document.getElementById('eventsBody').innerHTML = 
+            '<tr><td colspan="9" class="text-center">Failed to load events</td></tr>';
+    }
+}
+
+function renderEvents(events) {
+    const body = document.getElementById('eventsBody');
+    
+    if (!events || events.length === 0) {
+        body.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No events found</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    for (const evt of events) {
+        const levelClass = (evt.severity || 'normal').toLowerCase().replace('_', '-');
+        html += `
+        <tr>
+            <td>#${evt.id}</td>
+            <td>${evt.datetime}</td>
+            <td><span class="event-type">${(evt.event_type || '').replace(/_/g, ' ')}</span></td>
+            <td><strong>${evt.threat_score ? evt.threat_score.toFixed(1) : '0'}</strong></td>
+            <td><span class="severity-badge severity-${levelClass}">${(evt.severity || 'NORMAL').replace('_', ' ')}</span></td>
+            <td>${evt.person_count || 0}</td>
+            <td>${evt.weapon_detected ? '⚠️ Yes' : '—'}</td>
+            <td>${evt.violence_score ? evt.violence_score.toFixed(1) + '%' : '—'}</td>
+            <td>${evt.source || '—'}</td>
+        </tr>`;
+    }
+    body.innerHTML = html;
+}
+
+function updatePagination() {
+    const totalPages = Math.max(1, Math.ceil(totalEvents / pageSize));
+    document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages} (${totalEvents} events)`;
+}
+
+function prevPage() {
+    if (currentPage > 0) { currentPage--; loadEvents(); }
+}
+
+function nextPage() {
+    const totalPages = Math.ceil(totalEvents / pageSize);
+    if (currentPage < totalPages - 1) { currentPage++; loadEvents(); }
+}
+
+loadEvents();
+setInterval(loadEvents, 15000);
+</script>
+{% endblock %}

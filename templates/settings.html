@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.36 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+    </h2>
+    <div class="page-actions">
+        <button class="btn btn-secondary" onclick="resetDefaults()">Reset Defaults</button>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+</div>
+
+<div class="settings-grid">
+    <!-- Detection Settings -->
+    <div class="panel">
+        <div class="panel-header"><h3>Detection Settings</h3></div>
+        <div class="settings-section">
+            <div class="setting-item">
+                <label>YOLO Confidence Threshold</label>
+                <div class="slider-group">
+                    <input type="range" min="0.1" max="0.9" step="0.05" value="0.35" id="yoloConfidence" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="yoloConfidenceVal">0.35</span>
+                </div>
+                <p class="setting-hint">Higher = fewer but more confident detections</p>
+            </div>
+            <div class="setting-item">
+                <label>Processing FPS</label>
+                <div class="slider-group">
+                    <input type="range" min="1" max="30" step="1" value="10" id="processingFPS" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="processingFPSVal">10</span>
+                </div>
+                <p class="setting-hint">Higher = more CPU/GPU usage, lower latency</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Score Weights -->
+    <div class="panel">
+        <div class="panel-header"><h3>Threat Score Weights</h3></div>
+        <div class="settings-section">
+            <p class="setting-hint" style="margin-bottom:12px;">Adjust how each signal contributes to the final threat score. Values should sum to approximately 1.0.</p>
+            <div class="setting-item">
+                <label>Weapon Presence</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.30" id="weightWeapon" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightWeaponVal">0.30</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>Violence Score</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.25" id="weightViolence" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightViolenceVal">0.25</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>Crowd Anomaly</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.15" id="weightCrowd" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightCrowdVal">0.15</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>Movement Intensity</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.10" id="weightMovement" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightMovementVal">0.10</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>Temporal Persistence</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.15" id="weightPersistence" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightPersistenceVal">0.15</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>Detection Confidence</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="0.5" step="0.05" value="0.05" id="weightConfidence" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="weightConfidenceVal">0.05</span>
+                </div>
+            </div>
+            <div class="weight-sum">
+                Sum: <strong id="weightSum">1.00</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Level Thresholds -->
+    <div class="panel">
+        <div class="panel-header"><h3>Threat Level Thresholds</h3></div>
+        <div class="settings-section">
+            <div class="threshold-visual">
+                <div class="threshold-bar">
+                    <div class="threshold-segment" style="width:30%; background:var(--color-success);">
+                        <span>NORMAL</span>
+                        <span>0-30</span>
+                    </div>
+                    <div class="threshold-segment" style="width:30%; background:var(--color-warning);">
+                        <span>SUSPICIOUS</span>
+                        <span>31-60</span>
+                    </div>
+                    <div class="threshold-segment" style="width:20%; background:var(--threat-high-risk);">
+                        <span>HIGH RISK</span>
+                        <span>61-80</span>
+                    </div>
+                    <div class="threshold-segment" style="width:20%; background:var(--color-danger);">
+                        <span>CRITICAL</span>
+                        <span>81-100</span>
+                    </div>
+                </div>
+            </div>
+            <p class="setting-hint">These thresholds determine how the numeric threat score maps to threat levels. Modify the boundaries in the configuration file for advanced customization.</p>
+        </div>
+    </div>
+
+    <!-- Temporal Persistence Settings -->
+    <div class="panel">
+        <div class="panel-header"><h3>Temporal Persistence</h3></div>
+        <div class="settings-section">
+            <div class="setting-item">
+                <label>Window Size (frames)</label>
+                <div class="slider-group">
+                    <input type="range" min="5" max="30" step="1" value="15" id="persistWindow" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="persistWindowVal">15</span>
+                </div>
+                <p class="setting-hint">Number of frames in the temporal analysis window</p>
+            </div>
+            <div class="setting-item">
+                <label>Confirmation Frames</label>
+                <div class="slider-group">
+                    <input type="range" min="2" max="15" step="1" value="5" id="persistConfirm" oninput="updateSliderLabel(this)"/>
+                    <span class="slider-value" id="persistConfirmVal">5</span>
+                </div>
+                <p class="setting-hint">Consecutive suspicious frames needed to confirm a persistent event</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Actions -->
+    <div class="panel">
+        <div class="panel-header"><h3>System Actions</h3></div>
+        <div class="settings-section">
+            <button class="btn btn-danger" onclick="resetSystem()" style="width:100%;">
+                🗑️ Reset System (Clear all events, alerts, and analytics)
+            </button>
+            <p class="setting-hint" style="margin-top:8px;">This will permanently delete all stored data. This action cannot be undone.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateSliderLabel(slider) {
+    const label = document.getElementById(slider.id + 'Val');
+    if (label) label.textContent = slider.value;
+    
+    // Update weight sum
+    if (slider.id.startsWith('weight')) {
+        updateWeightSum();
+    }
+}
+
+function updateWeightSum() {
+    const weights = ['weightWeapon', 'weightViolence', 'weightCrowd', 
+                     'weightMovement', 'weightPersistence', 'weightConfidence'];
+    let sum = 0;
+    for (const id of weights) {
+        sum += parseFloat(document.getElementById(id).value);
+    }
+    const sumEl = document.getElementById('weightSum');
+    sumEl.textContent = sum.toFixed(2);
+    sumEl.style.color = Math.abs(sum - 1.0) < 0.05 ? 'var(--color-success)' : 'var(--color-danger)';
+}
+
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const config = await res.json();
+        
+        if (config.yolo_confidence !== undefined) {
+            document.getElementById('yoloConfidence').value = config.yolo_confidence;
+            document.getElementById('yoloConfidenceVal').textContent = config.yolo_confidence;
+        }
+        if (config.processing_fps !== undefined) {
+            document.getElementById('processingFPS').value = config.processing_fps;
+            document.getElementById('processingFPSVal').textContent = config.processing_fps;
+        }
+        if (config.threat_weights) {
+            const w = config.threat_weights;
+            const mapping = {
+                weapon_presence: 'weightWeapon',
+                violence_score: 'weightViolence',
+                crowd_anomaly: 'weightCrowd',
+                movement_intensity: 'weightMovement',
+                temporal_persistence: 'weightPersistence',
+                detection_confidence: 'weightConfidence',
+            };
+            for (const [key, id] of Object.entries(mapping)) {
+                if (w[key] !== undefined) {
+                    document.getElementById(id).value = w[key];
+                    document.getElementById(id + 'Val').textContent = w[key];
+                }
+            }
+        }
+        if (config.persistence_window !== undefined) {
+            document.getElementById('persistWindow').value = config.persistence_window;
+            document.getElementById('persistWindowVal').textContent = config.persistence_window;
+        }
+        if (config.persistence_confirm !== undefined) {
+            document.getElementById('persistConfirm').value = config.persistence_confirm;
+            document.getElementById('persistConfirmVal').textContent = config.persistence_confirm;
+        }
+        
+        updateWeightSum();
+    } catch (e) {
+        console.error('Failed to load settings:', e);
+    }
+}
+
+async function saveSettings() {
+    const settings = {
+        yolo_confidence: parseFloat(document.getElementById('yoloConfidence').value),
+        processing_fps: parseInt(document.getElementById('processingFPS').value),
+        threat_weights: {
+            weapon_presence: parseFloat(document.getElementById('weightWeapon').value),
+            violence_score: parseFloat(document.getElementById('weightViolence').value),
+            crowd_anomaly: parseFloat(document.getElementById('weightCrowd').value),
+            movement_intensity: parseFloat(document.getElementById('weightMovement').value),
+            temporal_persistence: parseFloat(document.getElementById('weightPersistence').value),
+            detection_confidence: parseFloat(document.getElementById('weightConfidence').value),
+        },
+        persistence_window: parseInt(document.getElementById('persistWindow').value),
+        persistence_confirm: parseInt(document.getElementById('persistConfirm').value),
+    };
+    
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(settings),
+        });
+        const data = await res.json();
+        showNotification('Settings saved successfully', 'success');
+    } catch (e) {
+        showNotification('Failed to save settings', 'error');
+    }
+}
+
+function resetDefaults() {
+    document.getElementById('yoloConfidence').value = 0.35;
+    document.getElementById('yoloConfidenceVal').textContent = '0.35';
+    document.getElementById('processingFPS').value = 10;
+    document.getElementById('processingFPSVal').textContent = '10';
+    
+    const defaults = { weightWeapon: 0.30, weightViolence: 0.25, weightCrowd: 0.15,
+                       weightMovement: 0.10, weightPersistence: 0.15, weightConfidence: 0.05 };
+    for (const [id, val] of Object.entries(defaults)) {
+        document.getElementById(id).value = val;
+        document.getElementById(id + 'Val').textContent = val;
+    }
+    
+    document.getElementById('persistWindow').value = 15;
+    document.getElementById('persistWindowVal').textContent = '15';
+    document.getElementById('persistConfirm').value = 5;
+    document.getElementById('persistConfirmVal').textContent = '5';
+    
+    updateWeightSum();
+    showNotification('Settings reset to defaults', 'info');
+}
+
+async function resetSystem() {
+    if (!confirm('Are you sure? This will delete ALL events, alerts, and analytics data.')) return;
+    
+    try {
+        await fetch('/api/reset', { method: 'POST' });
+        showNotification('System reset successfully', 'success');
+    } catch (e) {
+        showNotification('Failed to reset system', 'error');
+    }
+}
+
+function showNotification(msg, type) {
+    const notif = document.createElement('div');
+    notif.className = `notification notification-${type}`;
+    notif.textContent = msg;
+    document.body.appendChild(notif);
+    setTimeout(() => { notif.classList.add('notification-show'); }, 10);
+    setTimeout(() => {
+        notif.classList.remove('notification-show');
+        setTimeout(() => notif.remove(), 300);
+    }, 3000);
+}
+
+loadSettings();
+</script>
+{% endblock %}

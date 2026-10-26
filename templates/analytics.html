@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — AI Surveillance Framework{% endblock %}
+{% block page_title %}Analytics & Performance{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        Analytics &amp; Performance Metrics
+    </h2>
+    <button class="btn btn-secondary" onclick="loadAnalytics()" style="margin-left:auto;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+    </button>
+</div>
+
+<!-- Stats Overview Cards -->
+<div class="analytics-summary">
+    <div class="summary-card">
+        <div class="summary-icon" style="color:var(--color-primary)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="summary-value" id="totalEvents">0</div>
+        <div class="summary-label">Total Events</div>
+    </div>
+    <div class="summary-card summary-critical">
+        <div class="summary-icon" style="color:var(--color-danger)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="summary-value" id="totalAlerts">0</div>
+        <div class="summary-label">Total Alerts</div>
+    </div>
+    <div class="summary-card summary-warning">
+        <div class="summary-icon" style="color:var(--color-warning)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="summary-value" id="avgThreat">0.0</div>
+        <div class="summary-label">Avg Threat Score</div>
+    </div>
+    <div class="summary-card summary-success">
+        <div class="summary-icon" style="color:var(--color-success)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="summary-value" id="avgFPS">0.0</div>
+        <div class="summary-label">Avg Processing FPS</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="color:var(--color-info)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="summary-value" id="avgInference">0ms</div>
+        <div class="summary-label">Avg Inference Latency</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="analytics-grid">
+    <!-- Threat Score Timeline Chart -->
+    <div class="panel" style="grid-column: span 2;">
+        <div class="panel-header">
+            <h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Threat Score Timeline (Recent Sessions)
+            </h3>
+        </div>
+        <div style="padding: 16px; height: 220px;">
+            <canvas id="threatTimelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Event Distribution -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                Event Distribution by Severity
+            </h3>
+        </div>
+        <div style="padding: 16px; height: 220px;">
+            <canvas id="severityDonutChart"></canvas>
+        </div>
+    </div>
+
+    <!-- FPS Distribution -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                FPS Distribution
+            </h3>
+        </div>
+        <div style="padding: 16px; height: 220px;">
+            <canvas id="fpsChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Details Grid -->
+<div class="analytics-grid" style="margin-top: 16px;">
+    <!-- Performance Metrics -->
+    <div class="panel">
+        <div class="panel-header"><h3>Performance Metrics</h3></div>
+        <div class="metrics-list" id="perfMetrics">
+            <div class="metric-row">
+                <span>Average FPS</span>
+                <span class="metric-value" id="metricFPS">—</span>
+            </div>
+            <div class="metric-row">
+                <span>Average Inference Latency</span>
+                <span class="metric-value" id="metricInference">—</span>
+            </div>
+            <div class="metric-row">
+                <span>Total Events Logged</span>
+                <span class="metric-value" id="metricFrames">—</span>
+            </div>
+            <div class="metric-row">
+                <span>Critical Alerts</span>
+                <span class="metric-value" style="color:var(--color-danger)" id="metricCritical">—</span>
+            </div>
+            <div class="metric-row">
+                <span>High Risk Alerts</span>
+                <span class="metric-value" style="color:var(--color-warning)" id="metricHighRisk">—</span>
+            </div>
+            <div class="metric-row">
+                <span>Avg Threat Score</span>
+                <span class="metric-value" id="metricAvgThreat">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Severity Breakdown (bar chart) -->
+    <div class="panel">
+        <div class="panel-header"><h3>Severity Count Breakdown</h3></div>
+        <div class="chart-container">
+            <div class="bar-chart" id="severityBars"></div>
+        </div>
+    </div>
+
+    <!-- Research Metrics -->
+    <div class="panel">
+        <div class="panel-header"><h3>Research Metrics (Phase 2)</h3></div>
+        <div class="metrics-list">
+            <div class="metric-row">
+                <span>Precision</span>
+                <span class="metric-value text-muted">Requires ground truth</span>
+            </div>
+            <div class="metric-row">
+                <span>Recall</span>
+                <span class="metric-value text-muted">Requires ground truth</span>
+            </div>
+            <div class="metric-row">
+                <span>F1-Score</span>
+                <span class="metric-value text-muted">Requires ground truth</span>
+            </div>
+            <div class="metric-row">
+                <span>Detection Accuracy</span>
+                <span class="metric-value text-muted">Requires ground truth</span>
+            </div>
+            <div class="metric-row">
+                <span>Violence Model</span>
+                <span class="metric-value" id="metricViolenceModel">Optical Flow (Phase 1)</span>
+            </div>
+            <div class="metric-row">
+                <span>Object Detector</span>
+                <span class="metric-value">YOLOv8n</span>
+            </div>
+        </div>
+        <p class="text-muted" style="padding:0 16px 16px; font-size:12px; line-height:1.5;">
+            <strong>Note:</strong> Precision, recall, and F1-score require manually validated ground-truth labels.
+            These metrics are not fabricated. They will be computed when evaluation data from
+            UCF-Crime or CCTV-Fights is integrated in Phase 2.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Chart instances
+let threatChart = null;
+let severityChart = null;
+let fpsChart = null;
+
+// Chart defaults — dark theme
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1e293b';
+
+async function loadAnalytics() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        const stats = data.statistics || {};
+        const analytics = (data.analytics || []).reverse(); // chronological order
+        
+        // ── Summary Cards ───────────────────────────────────────
+        document.getElementById('totalEvents').textContent = stats.events_total || 0;
+        document.getElementById('totalAlerts').textContent = stats.alerts_total || 0;
+        document.getElementById('avgThreat').textContent = (stats.avg_threat_score || 0).toFixed(1);
+        document.getElementById('avgFPS').textContent = (stats.avg_fps || 0).toFixed(1);
+        document.getElementById('avgInference').textContent = (stats.avg_inference_ms || 0).toFixed(1) + 'ms';
+        
+        // ── Performance Details ─────────────────────────────────
+        document.getElementById('metricFPS').textContent = (stats.avg_fps || 0).toFixed(1) + ' fps';
+        document.getElementById('metricInference').textContent = (stats.avg_inference_ms || 0).toFixed(1) + ' ms';
+        document.getElementById('metricFrames').textContent = stats.events_total || 0;
+        document.getElementById('metricCritical').textContent = stats.alerts_critical || 0;
+        document.getElementById('metricHighRisk').textContent = stats.alerts_high_risk || 0;
+        document.getElementById('metricAvgThreat').textContent = (stats.avg_threat_score || 0).toFixed(1) + '/100';
+        
+        // ── Bar Chart: Severity ─────────────────────────────────
+        const severities = [
+            { label: 'Normal',    count: stats.events_normal || 0,    color: '#22c55e' },
+            { label: 'Suspicious',count: stats.events_suspicious || 0, color: '#eab308' },
+            { label: 'High Risk', count: stats.events_high_risk || 0,  color: '#f97316' },
+            { label: 'Critical',  count: stats.events_critical || 0,   color: '#ef4444' },
+        ];
+        const maxCount = Math.max(...severities.map(s => s.count), 1);
+        let chartHtml = '';
+        for (const s of severities) {
+            const pct = (s.count / maxCount) * 100;
+            chartHtml += `
+            <div class="bar-item">
+                <span class="bar-label">${s.label}</span>
+                <div class="bar-track">
+                    <div class="bar-value" style="width:${pct}%; background:${s.color}"></div>
+                </div>
+                <span class="bar-count">${s.count}</span>
+            </div>`;
+        }
+        document.getElementById('severityBars').innerHTML = chartHtml;
+        
+        // ── Chart.js: Threat Score Timeline ────────────────────
+        const timeLabels = analytics.slice(-50).map((a, i) => i + 1);
+        const threatScores = analytics.slice(-50).map(a => a.threat_score || 0);
+        const fpsData = analytics.slice(-50).map(a => a.fps || 0);
+        
+        if (threatChart) threatChart.destroy();
+        const ctx1 = document.getElementById('threatTimelineChart').getContext('2d');
+        threatChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Threat Score',
+                    data: threatScores,
+                    borderColor: '#818cf8',
+                    backgroundColor: 'rgba(129,140,248,0.12)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 1,
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: { mode: 'index', intersect: false },
+                },
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Sample Index' } },
+                    y: {
+                        display: true, min: 0, max: 100,
+                        title: { display: true, text: 'Threat Score' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                    }
+                }
+            }
+        });
+        
+        // ── Chart.js: Severity Donut ────────────────────────────
+        if (severityChart) severityChart.destroy();
+        const ctx2 = document.getElementById('severityDonutChart').getContext('2d');
+        severityChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Normal', 'Suspicious', 'High Risk', 'Critical'],
+                datasets: [{
+                    data: [
+                        stats.events_normal || 0,
+                        stats.events_suspicious || 0,
+                        stats.events_high_risk || 0,
+                        stats.events_critical || 0,
+                    ],
+                    backgroundColor: ['#22c55e', '#eab308', '#f97316', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#0f172a',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { padding: 12, font: { size: 12 } } },
+                }
+            }
+        });
+        
+        // ── Chart.js: FPS Bar Chart ─────────────────────────────
+        if (fpsChart) fpsChart.destroy();
+        const ctx3 = document.getElementById('fpsChart').getContext('2d');
+        // Bucket FPS into ranges
+        const fpsBuckets = { '0-5': 0, '5-10': 0, '10-20': 0, '20-30': 0, '30+': 0 };
+        for (const v of fpsData) {
+            if (v < 5) fpsBuckets['0-5']++;
+            else if (v < 10) fpsBuckets['5-10']++;
+            else if (v < 20) fpsBuckets['10-20']++;
+            else if (v < 30) fpsBuckets['20-30']++;
+            else fpsBuckets['30+']++;
+        }
+        fpsChart = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(fpsBuckets),
+                datasets: [{
+                    label: 'Frame Count',
+                    data: Object.values(fpsBuckets),
+                    backgroundColor: ['#ef4444','#f97316','#eab308','#22c55e','#10b981'],
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: 'FPS Range' } },
+                    y: {
+                        title: { display: true, text: 'Count' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        beginAtZero: true,
+                    }
+                }
+            }
+        });
+        
+    } catch (e) {
+        console.error('Failed to load analytics:', e);
+    }
+}
+
+// Load on page open + refresh every 30s
+loadAnalytics();
+setInterval(loadAnalytics, 30000);
+</script>
+{% endblock %}
